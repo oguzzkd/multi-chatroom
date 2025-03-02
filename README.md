@@ -1,5 +1,6 @@
 # Overview
 Multi Chatroom is a client and server chatting application supporting rooms of different sizes. It was made for the purpose of learning sockets and C programming, as well as having fun.
+
 **Author:** Ismail Oguz Karaduman
 
 # Features
