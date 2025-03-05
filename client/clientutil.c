@@ -41,14 +41,29 @@ void connectToServer(int socketFD, struct sockaddr_in * addr){
     }
 }
 
+void parseAndProcessMsg(char * msg, ssize_t recvSize){
+    char * end_pos = msg;
+    char * start_pos = msg;
+    while ( ( start_pos = strchr(end_pos, MSG_START) ) && 
+            ( end_pos = strchr(end_pos + 1, MSG_END) )  &&
+            ( start_pos < (msg + recvSize) ) && ( end_pos <= (msg + recvSize) ) ) {
+        
+        *start_pos = '\0';
+        start_pos++;
+
+        *end_pos = '\0';
+
+        puts(start_pos);
+    }
+}
+
 void recvAndPrintIncoming(int socketFD){
     char buffer[BUFFERSIZE];
     ssize_t recvSize;
 
     recvThreadSetUp = 1;
     while ( (recvSize = recv(socketFD, buffer, BUFFERSIZE, 0)) > 0 ){
-        buffer[recvSize] = '\0';
-        puts(buffer);
+        parseAndProcessMsg(buffer, recvSize);
     }
 
     if ( recvSize < 0 ){
@@ -78,8 +93,13 @@ void recvAndPrintIncomingOnThread(int socketFD){
 
 void sendToServer(const char * msg, int socketFD){
     char buffer[BUFFERSIZE];
-    strncpy(buffer, msg, BUFFERSIZE);
+    buffer[0] = MSG_START;
+    buffer[1] = '\0';
+
+    strncat(buffer, msg, BUFFERSIZE - strlen(buffer));
     buffer[BUFFERSIZE - 1] = '\0';
+
+    strchr(buffer, '\0')[0] = MSG_END;
 
     if ( send(socketFD, buffer, strlen(buffer), 0) < 0 ){
         printf("send error: %s\n", strerror(errno));

@@ -55,13 +55,29 @@ void bindAndListen(int serverFD, struct sockaddr_in *serverAddr, int queueSize){
     fprintf(OUTSTREAM, "IP: %s PORT: %d\n", inet_ntoa(serverAddr->sin_addr), ntohs(serverAddr->sin_port));
 }
 
+void sendToClient(int socketFD, char * msg){
+    char buffer[BUFFERSIZE];
+    buffer[0] = MSG_START;
+    buffer[1] = '\0';
+
+    strncat(buffer, msg, BUFFERSIZE - strlen(buffer));
+    buffer[BUFFERSIZE - 1] = '\0';
+
+    strchr(buffer, '\0')[0] = MSG_END;
+
+    if ( send(socketFD, buffer, strlen(buffer), 0) < 0 ){
+        printf("send error: %s\n", strerror(errno));
+        printAndExitFailure("");
+    }
+}
+
 void sendUntilEnd(int socketFD, char * msg){
     char buffer[BUFFERSIZE];
 
     FOREACH((int) (strlen(msg) / BUFFERSIZE) + 1){
         strncpy(buffer, msg, BUFFERSIZE);
         if ( socketFD != NULL_SOCKET )
-            send(socketFD, buffer, strlen(buffer), 0);
+            sendToClient(socketFD, buffer);
     }
 }
 
@@ -74,7 +90,7 @@ void sendMessage(int socketFD, char * msg){
     buffer[BUFFERSIZE - 1] = '\0';
     
     if ( socketFD != NULL_SOCKET )
-        send(socketFD, buffer, strlen(buffer), 0);
+        sendToClient(socketFD, buffer);
 }
 
 void sendError(int socketFD, char * msg){
@@ -126,46 +142,65 @@ void acceptIncomingConnection(int serverFD, struct Room *room){
 }
 
 void sendChatMsgToAll(char * msg, struct User * user);
-// when new user joins a room the previous user's room is set to NULL_ROOM or NULL //HERE
-void recvAndPrintIncoming(struct User * user){
-    struct Room * room = user->room;
-    char buffer[BUFFERSIZE];
-    enum commandReturn command_return;
-    ssize_t recvSize;
 
-    while ( (( recvSize = recv(user->socketFD, buffer, BUFFERSIZE, 0)) > 0 ) 
-            && (user->socketFD != NULL_SOCKET) && (room != NULL_ROOM) ){
-        room = user->room;
-        buffer[recvSize] = '\0';
+int parseAndProcessMsg(struct User * user, char * msg, ssize_t recvSize){
+    struct Room * room = user->room;
+    enum commandReturn command_return;
+
+    char * end_pos = msg;
+    char * start_pos = msg;
+    while ( ( start_pos = strchr(end_pos, MSG_START) ) && 
+            ( end_pos = strchr(end_pos + 1, MSG_END) )  &&
+            ( start_pos < (msg + recvSize) ) && ( end_pos <= (msg + recvSize) ) ) {
         
+        *start_pos = '\0';
+        start_pos++;
+
+        *end_pos = '\0';
+        
+        room = user->room;
         if ( strcmp(room->name, "_LOBBY") ){
-            if ( buffer[0] == '/' ){
-                command_return = executeCommandRoom(buffer, user);
+            if ( start_pos[0] == '/' ){
+                command_return = executeCommandRoom(start_pos, user);
                 handleCommandReturn(command_return, user->socketFD);
 
                 if (command_return == SUCCESS_EXIT){
-                    recvSize = 0;
-                    break;
+                    return -1;
                 }
             }
             else
-                sendChatMsgToAll(buffer, user);
+                sendChatMsgToAll(start_pos, user);
         }
-        else if ( buffer[0] == '/' ){
-            command_return = executeCommandLobby(buffer, user);
+        else if ( start_pos[0] == '/' ){
+            command_return = executeCommandLobby(start_pos, user);
             handleCommandReturn(command_return, user->socketFD);
             if (command_return == SUCCESS_EXIT){
-                recvSize = 0;
-                break;
+                return -1;
             }
         }
         else {
             sendError(user->socketFD, "You can only send commands starting with '/' in the lobby.");
         }
-
     }
 
-    if ( recvSize == 0 ){
+    return 1;
+}
+
+void recvAndPrintIncoming(struct User * user){
+    ssize_t recvSize;
+    char buffer[BUFFERSIZE];
+    int exit = 0;
+
+    while ( (( recvSize = recv(user->socketFD, buffer, BUFFERSIZE, 0)) > 0 ) 
+            && (user->socketFD != NULL_SOCKET) && (user->room != NULL_ROOM) ){
+        
+        if (parseAndProcessMsg(user, buffer, recvSize) == -1){
+                exit = 1;
+                break;
+        }
+    }
+
+    if ( (recvSize == 0) || (exit == 1) ){
         puts("User disconnected.");
     }
     else{
@@ -213,7 +248,7 @@ void sendAll(char * buffer, struct User * user){
             ( room->users[i]->socketFD == user->socketFD ) )
             continue;
 
-        send(room->users[i]->socketFD, buffer, strlen(buffer), 0);
+        sendToClient(room->users[i]->socketFD, buffer);
     }
 }
 
