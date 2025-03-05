@@ -2,6 +2,9 @@
 #define MAX_USER_PER_ROOM 16
 #define SERVER_CAPACITY (MAX_ROOMS * MAX_USER_PER_ROOM)
 
+#define MSG_START 2
+#define MSG_END 4
+
 #define LISTENQUEUE 10
 
 #define BUFFERSIZE 2048

@@ -78,8 +78,13 @@ void recvAndPrintIncomingOnThread(int socketFD){
 
 void sendToServer(const char * msg, int socketFD){
     char buffer[BUFFERSIZE];
-    strncpy(buffer, msg, BUFFERSIZE);
+    buffer[0] = MSG_START;
+    buffer[1] = '\0';
+
+    strncat(buffer, msg, BUFFERSIZE - strlen(buffer));
     buffer[BUFFERSIZE - 1] = '\0';
+
+    strchr(buffer, '\0')[0] = MSG_END;
 
     if ( send(socketFD, buffer, strlen(buffer), 0) < 0 ){
         printf("send error: %s\n", strerror(errno));
