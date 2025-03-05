@@ -142,7 +142,7 @@ void recvAndPrintIncoming(struct User * user){
             if ( buffer[0] == '/' ){
                 command_return = executeCommandRoom(buffer, user);
                 handleCommandReturn(command_return, user->socketFD);
-                printf("ret = %d", command_return);
+
                 if (command_return == SUCCESS_EXIT){
                     recvSize = 0;
                     break;
