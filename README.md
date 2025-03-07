@@ -32,6 +32,9 @@ The client can simply be run with:
 
 ```./client_app [SERVER'S PORT]```
 
+# Known Issues
+- The menu messages sometimes fail to show when entering/exiting rooms. ```/refresh``` can be run to get the menu in lobby
+
 # Notes
 - Messages are not encrypted, don't send sensitive data over the application.
 - Configurations can be found in defines.h and can be changed, however extreme values are not recommended (e.g. setting the BUFFERSIZE too low causes menu messages to be sent part by part)
