@@ -3,6 +3,9 @@ Multi Chatroom is a client and server chatting application supporting rooms of d
 
 **Author:** Ismail Oguz Karaduman
 
+# Demo
+<img src="/demo/demo.gif" alt="Demo" width="250"/>
+
 # Features
 - Multiple rooms discoverable from the server lobby
 - Variable room sizes
