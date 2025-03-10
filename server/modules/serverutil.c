@@ -75,7 +75,7 @@ void sendUntilEnd(int socketFD, char * msg){
     char buffer[BUFFERSIZE];
 
     FOREACH((int) (strlen(msg) / BUFFERSIZE) + 1){
-        strncpy(buffer, msg, BUFFERSIZE);
+        strncpy(buffer, msg + (i * BUFFERSIZE), BUFFERSIZE);
         if ( socketFD != NULL_SOCKET )
             sendToClient(socketFD, buffer);
     }
