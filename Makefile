@@ -21,10 +21,10 @@ clientheaders = client/clientutil.h
 all: server_app client_app
 
 server_app: $(serversources) $(serverheaders) $(common)
-	gcc -Wall $(serversources) -o server_app
+	gcc $(serversources) -o server_app -g -fsanitize=address,undefined -Wall 
 	
 client_app: $(clientsources) $(clientheaders) $(common)
-	gcc -Wall $(clientsources) -o client_app
+	gcc $(clientsources) -o client_app -g -fsanitize=address,undefined -Wall 
 
 clean: 
 	rm -f server_app client_app
