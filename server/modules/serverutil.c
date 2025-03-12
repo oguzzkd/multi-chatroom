@@ -149,6 +149,13 @@ int parseAndProcessMsg(struct User * user, char * msg, ssize_t recvSize){
     struct Room * room = user->room;
     enum commandReturn command_return;
 
+    /*
+    user's socketFD needs to be stored elsewhere
+    in case user executes `/exit` which would free(user).
+    in this case user's socketFD member would be freed too which shouldn't be used.
+    */
+    int socketFD = user->socketFD;
+
     char * end_pos = msg;
     char * start_pos = msg;
     while ( ( start_pos = strchr(start_pos, MSG_START) ) && 
@@ -160,10 +167,11 @@ int parseAndProcessMsg(struct User * user, char * msg, ssize_t recvSize){
         *end_pos = '\0';
         
         room = user->room;
+        
         if ( strcmp(room->name, "_LOBBY") ){
             if ( start_pos[0] == '/' ){
                 command_return = executeCommandRoom(start_pos, user);
-                handleCommandReturn(command_return, user->socketFD);
+                handleCommandReturn(command_return, socketFD);
 
                 if (command_return == SUCCESS_EXIT){
                     return -1;
@@ -174,13 +182,13 @@ int parseAndProcessMsg(struct User * user, char * msg, ssize_t recvSize){
         }
         else if ( start_pos[0] == '/' ){
             command_return = executeCommandLobby(start_pos, user);
-            handleCommandReturn(command_return, user->socketFD);
+            handleCommandReturn(command_return, socketFD);
             if (command_return == SUCCESS_EXIT){
                 return -1;
             }
         }
         else {
-            sendError(user->socketFD, "You can only send commands starting with '/' in the lobby.");
+            sendError(socketFD, "You can only send commands starting with '/' in the lobby.");
         }
 
         if ( end_pos == msg + recvSize - 1 )
@@ -197,7 +205,7 @@ void recvAndPrintIncoming(struct User * user){
     char buffer[BUFFERSIZE];
     int exit = 0;
 
-    while ( (( recvSize = recv(user->socketFD, buffer, BUFFERSIZE, 0)) > 0 ) 
+    while ( (( recvSize = recv(user->socketFD, buffer, BUFFERSIZE, 0 )) > 0 ) 
             && (user->socketFD != NULL_SOCKET) && (user->room != NULL_ROOM) ){
         
         if (parseAndProcessMsg(user, buffer, recvSize) == -1){
@@ -213,7 +221,7 @@ void recvAndPrintIncoming(struct User * user){
         printf("recv error: %s\n", strerror(errno));
     }
     int ret;
-    if ( (ret = removeAndDisconnectUser(user) ) < 0 );
+    if ( (exit != 1) && (ret = removeAndDisconnectUser(user) ) < 0 );
         // printf("Error removing user, error no: %d\n", ret);
 }
 
