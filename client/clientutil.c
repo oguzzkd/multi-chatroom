@@ -42,18 +42,41 @@ void connectToServer(int socketFD, struct sockaddr_in * addr){
 }
 
 void parseAndProcessMsg(char * msg, ssize_t recvSize){
+    /*
+    the messages sent and received in the program are enclosed by
+    MSG_START and MSG_END characters to enable parsing of messages
+    which sometimes get "concatenated" in the socket transmission.
+
+    the parseAndProcessMsg function implements the parsing algorithm
+    which is documented below.
+    */
+
     char * end_pos = msg;
     char * start_pos = msg;
-    while ( ( start_pos = strchr(end_pos, MSG_START) ) && 
-            ( end_pos = strchr(end_pos + 1, MSG_END) )  &&
-            ( start_pos < (msg + recvSize) ) && ( end_pos <= (msg + recvSize) ) ) {
-        
-        *start_pos = '\0';
-        start_pos++;
 
+    while ( // the next starting and ending points
+            // are searched from where parsing last left, which start_pos is set to
+            ( start_pos = strchr(start_pos, MSG_START) ) && 
+            ( end_pos = strchr(start_pos, MSG_END) )  &&
+
+            // msg + recvSize - 1 points to the last character
+            // of the received message, which is expected to be MSG_END
+            ( start_pos < (msg + recvSize - 1) ) && ( end_pos <= (msg + recvSize - 1) ) ) {
+        
+        // our actual starting position is the next character after MSG_START
+        start_pos++;
+        
+        // end_pos needs to be replaced by '\0' to enable termination
         *end_pos = '\0';
 
         puts(start_pos);
+        
+        // program shouldn't attempt to process the string beyond the last character
+        if ( end_pos == msg + recvSize - 1 )
+            break;
+
+        // new message starts right after end_pos
+        start_pos = end_pos + 1;
     }
 }
 

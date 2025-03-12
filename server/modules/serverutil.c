@@ -145,16 +145,16 @@ void acceptIncomingConnection(int serverFD, struct Room *room){
 void sendChatMsgToAll(char * msg, struct User * user);
 
 int parseAndProcessMsg(struct User * user, char * msg, ssize_t recvSize){
+    // refer to client/clientutil.c -> function parseAndProcessMsg for parsing method
     struct Room * room = user->room;
     enum commandReturn command_return;
 
     char * end_pos = msg;
     char * start_pos = msg;
-    while ( ( start_pos = strchr(end_pos, MSG_START) ) && 
-            ( end_pos = strchr(end_pos + 1, MSG_END) )  &&
-            ( start_pos < (msg + recvSize) ) && ( end_pos <= (msg + recvSize) ) ) {
+    while ( ( start_pos = strchr(start_pos, MSG_START) ) && 
+            ( end_pos = strchr(start_pos, MSG_END) )  &&
+            ( start_pos < (msg + recvSize - 1) ) && ( end_pos <= (msg + recvSize - 1) ) ) {
         
-        *start_pos = '\0';
         start_pos++;
 
         *end_pos = '\0';
@@ -182,6 +182,11 @@ int parseAndProcessMsg(struct User * user, char * msg, ssize_t recvSize){
         else {
             sendError(user->socketFD, "You can only send commands starting with '/' in the lobby.");
         }
+
+        if ( end_pos == msg + recvSize - 1 )
+            break;
+            
+        start_pos = end_pos + 1;
     }
 
     return 1;
