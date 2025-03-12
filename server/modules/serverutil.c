@@ -63,9 +63,10 @@ void sendToClient(int socketFD, char * msg){
     strncat(buffer, msg, BUFFERSIZE - strlen(buffer));
     buffer[BUFFERSIZE - 1] = '\0';
 
-    strchr(buffer, '\0')[0] = MSG_END;
-
-    if ( send(socketFD, buffer, strlen(buffer), 0) < 0 ){
+    char * bufferEnd = strchr(buffer, '\0');
+    *bufferEnd = MSG_END;
+    ssize_t sendSize;
+    if ( (sendSize = send(socketFD, buffer, bufferEnd - buffer + 1, 0)) < 0 ){
         printf("send error: %s\n", strerror(errno));
         printAndExitFailure("");
     }
