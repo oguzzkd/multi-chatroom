@@ -78,6 +78,7 @@ void recvAndPrintIncoming(int socketFD){
 
 void * recvAndPrintIncoming_THREAD(void * arg){
     int socketFD = *((int *) arg);
+    free( (int *) arg );
     recvAndPrintIncoming(socketFD);
 
     return NULL;
@@ -85,8 +86,11 @@ void * recvAndPrintIncoming_THREAD(void * arg){
 
 void recvAndPrintIncomingOnThread(int socketFD){
     pthread_t thread_id;
-    
-    int res =  pthread_create(&thread_id, NULL, recvAndPrintIncoming_THREAD, (void *) &socketFD);
+
+    int * socketFD_arg = malloc(sizeof(socketFD));
+    *socketFD_arg = socketFD;
+
+    int res =  pthread_create(&thread_id, NULL, recvAndPrintIncoming_THREAD, socketFD_arg);
     if ( res != 0 )
         printAndExitFailure("Error creating receiving thread.");
 }
